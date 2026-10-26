@@ -1,0 +1,22 @@
+[project]
+name = "ledgerly-data"
+version = "0.1.0"
+description = "Synthetic but realistic B2B SaaS company data (CRM, billing, product usage, support) with ground truth for analytics and AI projects."
+requires-python = ">=3.11"
+dependencies = ["numpy>=2", "pandas>=2.2", "faker>=30", "pyarrow>=17", "duckdb>=1.1"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+ledgerly-generate = "ledgerly.generate:main"
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
