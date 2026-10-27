@@ -48,20 +48,25 @@ class Lifecycle:
         target = 0.25 + 0.6 * acct["_fit"]
         h = float(np.clip(target + rng.normal(0, 0.08), 0, 1))
         monthly_cancel = 1 - (1 - seg.churn_base) ** (1 / 12)
-        for m in month_starts(start, C.AS_OF)[1:]:
-            h = float(np.clip(0.85 * h + 0.15 * target + rng.normal(0, 0.05)
+        # One extra month past the snapshot so terms ending in the final month still get renewed/churned
+        for m in month_starts(start, C.AS_OF + days(31))[1:]:
+            beyond = m > C.AS_OF
+            if beyond and term_end >= C.AS_OF:
+                break
+            h = h if beyond else float(np.clip(0.85 * h + 0.15 * target + rng.normal(0, 0.05)
                               - (0.25 if rng.random() < 0.03 else 0), 0, 1))
-            self.health.append(dict(account_id=acct["account_id"], month=m, health=round(h, 3)))
+            if not beyond:
+                self.health.append(dict(account_id=acct["account_id"], month=m, health=round(h, 3)))
             churn_mult = math.exp(-3 * (h - 0.55))
 
             # Monthly-billed customers can cancel at any month boundary
-            if billing == "Monthly" and m < term_end and rng.random() < monthly_cancel * churn_mult * 0.5:
+            if not beyond and billing == "Monthly" and m < term_end and rng.random() < monthly_cancel * churn_mult * 0.5:
                 self._churn(acct, sub, m - days(1), h, term_end_cut=True)
                 return
 
             # Mid-term expansion (more likely for healthy Mid-Market/Enterprise)
             seg_mult = {"SMB": 0.6, "Mid-Market": 1.4, "Enterprise": 1.8}[acct["segment"]]
-            if m < term_end and rng.random() < 0.07 * h ** 2 * seg_mult:
+            if not beyond and m < term_end and rng.random() < 0.07 * h ** 2 * seg_mult:
                 add = max(1, int(seats * rng.uniform(0.08, 0.35)))
                 created = max(start, m - days(rng.integers(20, 50)))
                 eopp = self.funnel.opportunity(acct, "Expansion", created, (m - created).days,
@@ -99,7 +104,7 @@ class Lifecycle:
                 self._line(sub, term_start, term_end, plan, seats, unit, "Renewal", ropp["opportunity_id"])
 
         # Still active at AS_OF: renewal opp is open once we're inside the 90-day renewal window
-        if term_end > C.AS_OF and term_end - days(90) <= C.AS_OF:
+        if term_end >= C.AS_OF and term_end - days(90) <= C.AS_OF:
             p_churn = min(0.95, C.SEGMENTS[acct["segment"]].churn_base * math.exp(-3 * (h - 0.55)))
             self.funnel.opportunity(acct, "Renewal", term_end - days(90), 91, won=self.rng.random() > p_churn,
                                     plan=plan, seats=seats, discount=discount, owner_id=acct["csm_id"])

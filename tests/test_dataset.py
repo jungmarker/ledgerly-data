@@ -91,3 +91,12 @@ def test_business_metrics_are_realistic(raw):
 def test_deterministic():
     a, b = build(seed=11)["raw"]["opportunities"], build(seed=11)["raw"]["opportunities"]
     pd.testing.assert_frame_equal(a, b)
+
+
+def test_active_subscriptions_have_revenue_on_snapshot(raw):
+    """Every Active subscription must have a contract line covering the snapshot date
+    (regression: renewals due in the final month were never processed and looked like churn)."""
+    ln = raw["subscription_lines"]
+    covered = set(ln[(ln.start_date <= C.AS_OF) & (ln.end_date >= C.AS_OF)]["subscription_id"])
+    active = raw["subscriptions"].query("status == 'Active' and start_date <= @C.AS_OF")
+    assert set(active["subscription_id"]) <= covered

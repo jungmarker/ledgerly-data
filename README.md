@@ -14,7 +14,7 @@ This repo is the foundation for my portfolio projects (revenue metrics, forecast
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 ledgerly-generate --seed 42 --out data    # ~10 seconds
-pytest                                    # 24 invariant + realism tests
+pytest                                    # 25 invariant + realism tests
 ```
 
 Outputs:
@@ -33,10 +33,10 @@ duckdb data/ledgerly.duckdb "select segment, count(*) from raw.accounts where st
 
 | Metric | Value |
 |---|---|
-| ARR at snapshot | **$36.8M**, up from $2.9M two years earlier |
-| Customers | 688 active (SMB / Mid-Market / Enterprise) |
-| Net revenue retention (FY25) | **109%** |
-| Logo retention (FY25) | 78% (SMB churns most, Enterprise barely) |
+| ARR at snapshot | **$39.8M**, up from $12.7M two years earlier |
+| Customers | 709 active: 457 SMB, 208 Mid-Market, 44 Enterprise |
+| Net revenue retention (trailing 12 mo.) | **105%** (Enterprise 111%, SMB 84%) |
+| Gross revenue retention (trailing 12 mo.) | 85% |
 | Median new-business ACV | $7K SMB · $55K Mid-Market · $330K Enterprise |
 | New-business win rate | 36% SMB → 24% Enterprise; referrals ~55%, paid social ~20% |
 | Sales cycle (median) | 20 / 51 / 98 days |
