@@ -111,8 +111,8 @@ Full column definitions are in [`docs/data_dictionary.md`](docs/data_dictionary.
 
 | Project | What it proves |
 |---|---|
-| SaaS revenue metrics warehouse (dbt) | ARR/NRR/churn modeling, metric definitions, data tests |
-| CRM dedupe & identity-resolution toolkit | matching, survivorship, data quality reporting |
+| [SaaS revenue metrics warehouse (dbt)](https://github.com/jungmarker/saas-revenue-metrics) | ARR/NRR/churn modeling, metric definitions, data tests |
+| [CRM dedupe & identity-resolution toolkit](https://github.com/jungmarker/crm-dedupe-toolkit) | matching, survivorship, data quality reporting |
 | Pipeline & forecast cockpit | conversion, velocity, forecast accuracy back-test |
 | Customer health score & churn early warning | scoring and back-testing against real churn |
 | AI support-ticket triage agent with evals | LLM classification and routing, scored on `ticket_labels` |

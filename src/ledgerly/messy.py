@@ -7,6 +7,7 @@ from datetime import timedelta
 
 import numpy as np
 
+from . import config as C
 from .util import IdFactory, days
 
 STATE_NAMES = {"CA": "California", "NY": "New York", "TX": "Texas", "FL": "Florida", "IL": "Illinois",
@@ -51,6 +52,27 @@ class Messifier:
         a, b, c = p[:3], p[4:7], p[8:]
         return self.rng.choice([f"({a}) {b}-{c}", f"{a}.{b}.{c}", f"+1 {a} {b} {c}", f"{a}{b}{c}"])
 
+    def _drift_account(self, d: dict, owners: list) -> None:
+        """A duplicate is created months later by someone else, so its firmographics rarely match exactly."""
+        rng = self.rng
+        if rng.random() < 0.45:  # created by a different rep
+            d["owner_id"] = owners[int(rng.integers(len(owners)))]
+        r = rng.random()
+        if d.get("employee_count") is not None and r < 0.35:  # enrichment refreshed headcount
+            d["employee_count"] = max(1, round(d["employee_count"] * rng.uniform(0.8, 1.3)))
+        elif r < 0.5:
+            d["employee_count"] = None
+        r = rng.random()
+        if r < 0.15:
+            d["industry"] = None
+        elif r < 0.25:
+            d["industry"] = rng.choice(list(C.INDUSTRIES))
+        r = rng.random()
+        if r < 0.08:  # HQ entered instead of billing address
+            d["billing_state"] = rng.choice(sorted(STATE_NAMES))
+        if rng.random() < 0.10:
+            d["website"] = None
+
     # ------------------------------------------------------------- tables
     def accounts(self, accounts, contacts):
         rng = self.rng
@@ -64,6 +86,7 @@ class Messifier:
             if rng.random() < 0.08:
                 r["billing_state"] = rng.choice([STATE_NAMES[r["billing_state"]], r["billing_state"].lower()])
             out.append(r)
+        owners = sorted({a["owner_id"] for a in accounts if a.get("owner_id")})
         by_acct = {}
         for c in contacts:
             by_acct.setdefault(c["account_id"], []).append(c)
@@ -77,6 +100,7 @@ class Messifier:
                 d["status"], d["customer_since"], d["csm_id"] = "Prospect", None, None
                 if rng.random() < 0.3:
                     d["billing_state"] = STATE_NAMES.get(str(a["billing_state"]).upper(), a["billing_state"])
+                self._drift_account(d, owners)
                 out.append(d)
                 self.account_dupes.append(dict(duplicate_account_id=d["account_id"], master_account_id=a["account_id"]))
                 # Some contacts were created against the duplicate instead of the master
@@ -113,6 +137,13 @@ class Messifier:
                 else:
                     d["last_name"] = self._typo(c["last_name"])
                 d["phone"] = self._phone_variant(str(c["phone"])[:12]) if str(c["phone"])[3] == "-" else c["phone"]
+                r = rng.random()
+                if r < 0.25:  # mobile instead of office line
+                    d["phone"] = f"{rng.integers(201, 989)}-{rng.integers(200, 999)}-{rng.integers(1000, 9999)}"
+                elif r < 0.35:
+                    d["phone"] = None
+                if rng.random() < 0.25:  # title changed or entered differently
+                    d["title"] = None if rng.random() < 0.4 else rng.choice(["Finance Manager", "Director", "Manager"])
                 out.append(d)
                 self.contact_dupes.append(dict(duplicate_contact_id=d["contact_id"], master_contact_id=c["contact_id"]))
         return out
